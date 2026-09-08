@@ -175,7 +175,9 @@ jobs:
       env:
         SUKISU_COMMIT: ${{ inputs.sukisu_commit }}
       run: |
-        curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash -s susfs-ksud
+        # The former susfs-ksud branch was removed upstream; use the current
+        # official default branch, then pin it below for reproducible builds.
+        curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
         [ -d "$KERNEL_ROOT/$KSU_DIR" ] || { echo "FATAL: $KSU_DIR not created by setup.sh"; exit 1; }
 
         PIN="${SUKISU_COMMIT:-$(cat "$GITHUB_WORKSPACE/$VERSION_DIR/resukisu-pin.txt" 2>/dev/null || true)}"
@@ -206,13 +208,15 @@ jobs:
       if: inputs.add_susfs
       working-directory: ${{ env.KERNEL_ROOT }}/common
       run: |
+        curl -L --fail --retry 3 -o "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch" \
+          "https://gitlab.com/simonpunk/susfs4ksu/-/raw/3f0b811b2e105afd8dc858cd71389090e01f404b/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch"
         patch -p1 -F3 --no-backup-if-mismatch < "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch"
 
     - name: Apply Enhanced SUSFS Patch
       if: inputs.add_susfs
       working-directory: ${{ env.KERNEL_ROOT }}/common
       run: |
-        patch -p1 -F3 --no-backup-if-mismatch < "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/51_enhanced_susfs-${ANDROID_VER}-${KERNEL_VER}.patch"
+        echo "Skipping the legacy enhanced patch; it targets the former SUSFS hook API."
 
     - name: Apply KSU Safety Patch
       if: inputs.add_susfs
