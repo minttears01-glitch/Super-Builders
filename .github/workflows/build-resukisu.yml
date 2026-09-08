@@ -208,8 +208,13 @@ jobs:
       if: inputs.add_susfs
       working-directory: ${{ env.KERNEL_ROOT }}/common
       run: |
+        SUSFS_BASE="https://gitlab.com/simonpunk/susfs4ksu/-/raw/3f0b811b2e105afd8dc858cd71389090e01f404b/kernel_patches"
         curl -L --fail --retry 3 -o "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch" \
-          "https://gitlab.com/simonpunk/susfs4ksu/-/raw/3f0b811b2e105afd8dc858cd71389090e01f404b/kernel_patches/50_add_susfs_in_gki-android15-6.6.patch"
+          "$SUSFS_BASE/50_add_susfs_in_gki-android15-6.6.patch"
+        curl -L --fail --retry 3 -o fs/susfs.c "$SUSFS_BASE/fs/susfs.c"
+        mkdir -p include/linux
+        curl -L --fail --retry 3 -o include/linux/susfs.h "$SUSFS_BASE/include/linux/susfs.h"
+        curl -L --fail --retry 3 -o include/linux/susfs_def.h "$SUSFS_BASE/include/linux/susfs_def.h"
         patch -p1 -F3 --no-backup-if-mismatch < "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch"
 
     - name: Apply Enhanced SUSFS Patch
