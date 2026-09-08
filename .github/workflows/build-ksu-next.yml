@@ -175,16 +175,12 @@ jobs:
       env:
         SUKISU_COMMIT: ${{ inputs.sukisu_commit }}
       run: |
-        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/stable/kernel/setup.sh" | bash -s stable
+        PIN="${SUKISU_COMMIT:-$(cat "$GITHUB_WORKSPACE/$VERSION_DIR/kernelsu-next-pin.txt" 2>/dev/null || true)}"
+        curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s "${PIN:-dev-susfs}"
         [ -d "$KERNEL_ROOT/$KSU_DIR" ] || { echo "FATAL: $KSU_DIR not created by setup.sh"; exit 1; }
 
-        PIN="${SUKISU_COMMIT:-$(cat "$GITHUB_WORKSPACE/$VERSION_DIR/kernelsu-next-pin.txt" 2>/dev/null || true)}"
-        if [ -n "$PIN" ]; then
-          cd "$KERNEL_ROOT/$KSU_DIR"
-          git fetch origin
-          git checkout "$PIN"
-          echo "Pinned KernelSU-Next to $(git rev-parse --short=7 HEAD)"
-        fi
+        cd "$KERNEL_ROOT/$KSU_DIR"
+        echo "Pinned KernelSU-Next SUSFS fork to $(git rev-parse --short=7 HEAD)"
 
         cd "$KERNEL_ROOT/common"
 
@@ -212,17 +208,6 @@ jobs:
       working-directory: ${{ env.KERNEL_ROOT }}/common
       run: |
         patch -p1 -F3 --no-backup-if-mismatch < "$GITHUB_WORKSPACE/$VERSION_DIR/KernelSU-Next/patches/51_enhanced_susfs-${ANDROID_VER}-${KERNEL_VER}.patch"
-
-    - name: Apply KSU Safety Patch
-      if: inputs.add_susfs && inputs.sukisu_commit == ''
-      working-directory: ${{ env.KERNEL_ROOT }}/${{ env.KSU_DIR }}
-      run: |
-        PATCH="$GITHUB_WORKSPACE/$VERSION_DIR/KernelSU-Next/patches/70_ksu_safety-kernelsu-next-${KERNEL_VER}.patch"
-        if [ -s "$PATCH" ]; then
-          patch -p1 --no-backup-if-mismatch < "$PATCH"
-        else
-          echo "No 70_ patch needed"
-        fi
 
     - name: Apply ZeroMount Patch
       if: inputs.add_zeromount && inputs.add_susfs
