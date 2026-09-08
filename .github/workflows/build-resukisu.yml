@@ -215,6 +215,8 @@ jobs:
         mkdir -p include/linux
         curl -L --fail --retry 3 -o include/linux/susfs.h "$SUSFS_BASE/include/linux/susfs.h"
         curl -L --fail --retry 3 -o include/linux/susfs_def.h "$SUSFS_BASE/include/linux/susfs_def.h"
+        # ReSukiSU exposes the SU FD installer under its current name.
+        sed -i 's/ksu_install_su_fd/ksu_install_fd/g' "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch"
         patch -p1 -F3 --no-backup-if-mismatch < "$GITHUB_WORKSPACE/$VERSION_DIR/ReSukiSU/patches/50_add_susfs_in_gki-${ANDROID_VER}-${KERNEL_VER}.patch"
 
     - name: Apply Enhanced SUSFS Patch
