@@ -184,6 +184,10 @@ jobs:
         [ -d "$KERNEL_ROOT/$KSU_DIR" ] || { echo "FATAL: $KSU_DIR not created by setup.sh"; exit 1; }
 
         cd "$KERNEL_ROOT/$KSU_DIR"
+        if [ -n "$PIN" ]; then
+          git fetch --depth=1 origin "$PIN"
+          git checkout --detach FETCH_HEAD
+        fi
         ACTUAL_COMMIT="$(git rev-parse HEAD)"
         if [ -n "$PIN" ] && [ "$ACTUAL_COMMIT" != "$PIN" ]; then
           echo "FATAL: requested KernelSU-Next commit $PIN but got $ACTUAL_COMMIT"
