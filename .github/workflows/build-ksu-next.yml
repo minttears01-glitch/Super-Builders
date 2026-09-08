@@ -176,11 +176,21 @@ jobs:
         SUKISU_COMMIT: ${{ inputs.sukisu_commit }}
       run: |
         PIN="${SUKISU_COMMIT:-$(cat "$GITHUB_WORKSPACE/$VERSION_DIR/kernelsu-next-pin.txt" 2>/dev/null || true)}"
-        curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s "${PIN:-dev-susfs}"
+        SETUP_SCRIPT="$(mktemp)"
+        curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" -o "$SETUP_SCRIPT"
+        sed -i 's/^OWNER="KernelSU-Next"$/OWNER="pershoot"/' "$SETUP_SCRIPT"
+        grep -qx 'OWNER="pershoot"' "$SETUP_SCRIPT" || { echo "FATAL: failed to select pershoot SUSFS fork"; exit 1; }
+        bash "$SETUP_SCRIPT" "${PIN:-dev-susfs}"
         [ -d "$KERNEL_ROOT/$KSU_DIR" ] || { echo "FATAL: $KSU_DIR not created by setup.sh"; exit 1; }
 
         cd "$KERNEL_ROOT/$KSU_DIR"
-        echo "Pinned KernelSU-Next SUSFS fork to $(git rev-parse --short=7 HEAD)"
+        ACTUAL_COMMIT="$(git rev-parse HEAD)"
+        if [ -n "$PIN" ] && [ "$ACTUAL_COMMIT" != "$PIN" ]; then
+          echo "FATAL: requested KernelSU-Next commit $PIN but got $ACTUAL_COMMIT"
+          exit 1
+        fi
+        grep -q '^config KSU_SUSFS$' kernel/Kconfig || { echo "FATAL: selected KernelSU-Next source has no SUSFS integration"; exit 1; }
+        echo "Pinned pershoot KernelSU-Next SUSFS fork to $(git rev-parse --short=7 HEAD)"
 
         cd "$KERNEL_ROOT/common"
 
